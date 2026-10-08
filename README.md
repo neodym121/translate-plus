@@ -44,7 +44,7 @@ The selection icon doesn't appear where browsers don't let extensions in (`chrom
 | Bing | not needed | Bing's web translator; long text is split into 1000-character parts automatically |
 | Groq | [needed](https://console.groq.com/keys) | fast open models (Llama, gpt-oss, Qwen…), grouped by developer |
 | Gemini | [needed](https://aistudio.google.com/apikey) | Google AI Studio: Gemini and Gemma models |
-| Polza | [needed](https://polza.ai/dashboard/api-keys) | 300+ text models from every developer in one searchable list (Claude Haiku 5.5 by default); below it, the sub-provider: the service that runs the chosen model, with its prices, or "Automatic" |
+| Polza | [needed](https://polza.ai/dashboard/api-keys) | 300+ text models from every developer in one searchable list (Qwen3.5 9B by default); below it, the sub-provider: the service that runs the chosen model, with its prices, or "Automatic" |
 
 For the AI providers, the model list comes from the provider's API (when you enter the key, with the ↻ button, and once a day by itself). Models that can't answer in text, such as speech, image, embedding and moderation models, are left out. Long lists (models, languages) have a search box.
 

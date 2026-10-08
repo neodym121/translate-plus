@@ -125,7 +125,7 @@ test('settings default to English for both the interface and the translation', a
     const fresh = await loadSettings();
     assert.equal(fresh.uiLang, 'en');
     assert.equal(fresh.targetLang, 'en');
-    assert.equal(fresh.polza.model, 'anthropic/claude-haiku-5.5');
+    assert.equal(fresh.polza.model, 'qwen/qwen3.5-9b');
     assert.equal(fresh.polza.route, ''); // Polza picks the sub-provider
     stored = { settings: { uiLang: 'ru', targetLang: 'de' } };
     const kept = await loadSettings();
@@ -432,7 +432,7 @@ live('polza: public catalog is reachable', async () => {
     const models = await polzaModels();
     assert.ok(models.length > 100);
     assert.ok(models.some((m) => m.id === 'openai/gpt-4o-mini'));
-    assert.ok(models.some((m) => m.id === 'anthropic/claude-haiku-5.5')); // the default model
+    assert.ok(models.some((m) => m.id === 'qwen/qwen3.5-9b')); // the default model
     const routes = await polzaRoutes('openai/gpt-4o-mini');
     assert.ok(routes.length > 0 && routes.every((r) => r.name));
   } finally {
