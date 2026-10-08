@@ -394,7 +394,8 @@ const GECKO_OWN = new Set(['manifest.json', 'background.js', 'lib/i18n.js', 'pop
 async function listFiles(dir) {
   const base = fileURLToPath(new URL(dir, ROOT));
   const entries = await readdir(base, { recursive: true, withFileTypes: true });
-  return entries.filter((e) => e.isFile()).map((e) => relative(base, join(e.parentPath, e.name)).replaceAll('\\', '/')).sort();
+  return entries.filter((e) => e.isFile() && e.name !== '.amo-upload-uuid') // left by web-ext sign
+    .map((e) => relative(base, join(e.parentPath, e.name)).replaceAll('\\', '/')).sort();
 }
 
 test('gecko build: Firefox manifest, in step with the Chromium one and with updates.json', async () => {

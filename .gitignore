@@ -9,3 +9,4 @@ node_modules/
 # web-ext sign output (the signed .xpi goes to GitHub Releases, not into git)
 web-ext-artifacts/
 *.xpi
+.amo-upload-uuid
