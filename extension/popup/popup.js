@@ -1,9 +1,10 @@
 import { LANGUAGES, languageName, normalizeLangCode } from '../lib/languages.js';
-import { loadSettings, saveSettings, DEFAULT_MODELS } from '../lib/settings.js';
+import { loadSettings, saveSettings, DEFAULT_MODELS, DEFAULT_SETTINGS } from '../lib/settings.js';
 import {
-  PROVIDERS, translate, configureCache, listModels, polzaVendors, polzaModels, recommendPolzaModel,
+  PROVIDERS, translate, configureCache, listModels, polzaModels, polzaRoutes, recommendPolzaModel,
 } from '../lib/providers.js';
 import { makeT, pickLocale, errorMessage } from '../lib/i18n.js';
+import { createDropdown } from './dropdown.js';
 
 const MAX_CHARS = 10000;
 const AUTO_DELAY = 700;               // ms after the last keystroke before translating
@@ -46,7 +47,7 @@ const state = {
   settings: null,
   selectionMode: false, // opened with text selected on a page: only the translation is shown
   panels: {},         // provider id -> { item, inner, note, built }: the key/model box under each AI provider's row
-  cache: {},          // model lists: { groq|gemini: {models: [{id, group}], at}, polzaVendors: {list, at}, polza: {vendor: {models, at}} }
+  cache: {},          // model lists: { groq|gemini: {models: [{id, group}], at}, polzaModels: {models, at}, polzaRoutes: {model: {list, at}} }
   abort: null,
   requestId: 0,
   timer: 0,
@@ -94,6 +95,9 @@ const persist = () => saveSettings(state.settings);
 
 async function loadCache() {
   state.cache = (await chrome.storage.local.get('modelCache')).modelCache ?? {};
+  // 1.1 kept Polza models per developer; 1.2 lists them all at once
+  delete state.cache.polza;
+  delete state.cache.polzaVendors;
 }
 const saveCache = () => chrome.storage.local.set({ modelCache: state.cache });
 
@@ -116,9 +120,21 @@ function buildLanguageSelect() {
   const options = LANGUAGES
     .map((code) => ({ code, name: languageName(code, locale) }))
     .sort((a, b) => collator.compare(a.name, b.name));
-  el.target.replaceChildren(...options.map((o) => new Option(o.name, o.code)));
-  el.target.value = state.settings.targetLang;
+  targetPicker.setOptions(options.map((o) => ({ value: o.code, label: o.name })), state.settings.targetLang);
 }
+
+/** Strings every dropdown reads when it opens, so they follow the interface language. */
+const dropdownTexts = () => ({ search: t('search'), empty: t('noMatches') });
+
+const targetPicker = createDropdown({
+  button: el.target,
+  texts: dropdownTexts,
+  onChange: (code) => {
+    state.settings.targetLang = code;
+    persist();
+    translateNow();
+  },
+});
 
 // ----------------------------------------------------------- main screen UI
 
@@ -429,35 +445,14 @@ function syncPanels({ reveal = false } = {}) {
   }
 }
 
-function fillSelect(select, options, selected) {
-  const list = !selected || options.some((o) => o.value === selected)
-    ? options
-    : [{ value: selected, label: selected }, ...options];
-  select.replaceChildren(...list.map((o) => new Option(o.label, o.value)));
-  if (selected) select.value = selected;
-}
-
-/** Models as options, under a heading per developer / family when the list has several. */
-function fillModels(select, models, selected) {
-  const nodes = [];
-  if (selected && !models.some((m) => m.id === selected)) nodes.push(new Option(selected, selected)); // a saved choice that is no longer listed
-  const groups = new Map();
-  for (const m of models) {
-    const name = m.group ?? '';
-    if (!groups.has(name)) groups.set(name, []);
-    groups.get(name).push(m);
-  }
-  if (groups.size <= 1) {
-    nodes.push(...models.map((m) => new Option(m.id, m.id)));
-  } else {
-    for (const [name, list] of groups) {
-      const group = h('optgroup', { label: name || t('otherModels') });
-      group.append(...list.map((m) => new Option(m.id, m.id)));
-      nodes.push(group);
-    }
-  }
-  select.replaceChildren(...nodes);
-  if (selected) select.value = selected;
+/** Models as dropdown options, under a heading per developer / family when the list has several. */
+function modelOptions(models) {
+  const grouped = new Set(models.map((m) => m.group ?? '')).size > 1;
+  return models.map((m) => ({
+    value: m.id,
+    label: m.label ?? m.id,
+    group: grouped ? m.group || t('otherModels') : undefined,
+  }));
 }
 
 function keyField(provider) {
@@ -489,24 +484,28 @@ function keyField(provider) {
   };
 }
 
-function modelField(provider, { onRefresh }) {
+function modelField(provider, { onRefresh, onChange }) {
   const id = `model-${provider}`;
-  const select = h('select', { class: 'select', id });
+  const picker = createDropdown({
+    id,
+    texts: dropdownTexts,
+    onChange: (model) => {
+      state.settings[provider].model = model;
+      state.dirty = true;
+      persist();
+      onChange?.(model);
+    },
+  });
   const refresh = iconButton(ICONS.refresh, t('refreshModels'));
   const status = h('div', { class: 'hint status', 'aria-live': 'polite' });
-  select.addEventListener('change', () => {
-    state.settings[provider].model = select.value;
-    state.dirty = true;
-    persist();
-  });
   refresh.addEventListener('click', () => onRefresh());
   return {
-    select,
+    picker,
     status,
     refresh,
     node: h('div', { class: 'field' },
       h('label', { for: id }, t('model')),
-      h('div', { class: 'field-row' }, select, refresh),
+      h('div', { class: 'field-row' }, picker.node, refresh),
       status),
   };
 }
@@ -533,7 +532,7 @@ function renderKeyedProvider(provider) {
       const models = await listModels(provider, cfg.apiKey);
       state.cache[provider] = { models, at: Date.now() };
       saveCache();
-      fillModels(model.select, models, cfg.model);
+      model.picker.setOptions(modelOptions(models), cfg.model);
       if (announce) model.status.textContent = t('modelsUpdated', { n: models.length });
     } catch (error) {
       model.status.textContent = error?.code === 'auth' ? errorMessage(t, error, PROVIDERS[provider].name) : t('modelsFailed');
@@ -543,7 +542,7 @@ function renderKeyedProvider(provider) {
   }
 
   const entry = state.cache[provider];
-  fillModels(model.select, entry?.models?.length ? entry.models : DEFAULT_MODELS[provider].map((id) => ({ id, group: '' })), cfg.model);
+  model.picker.setOptions(modelOptions(entry?.models?.length ? entry.models : DEFAULT_MODELS[provider].map((id) => ({ id, group: '' }))), cfg.model);
   // A new key, or a list that has gone stale, is the moment to ask what the key can actually use.
   if (cfg.apiKey && !fresh(entry)) reload({ announce: false });
   key.input.addEventListener('change', () => { if (cfg.apiKey) reload(); });
@@ -551,24 +550,72 @@ function renderKeyedProvider(provider) {
   return h('div', { class: 'config' }, key.node, model.node);
 }
 
-// Polza: API key + sub-provider (the model's developer) + one of its models.
+// Polza: API key + one model out of all of Polza's text models + the sub-provider that runs it.
 const VENDOR_NAMES = {
   openai: 'OpenAI', anthropic: 'Anthropic', google: 'Google', deepseek: 'DeepSeek', 'deepseek-ai': 'DeepSeek AI',
   'x-ai': 'xAI', 'meta-llama': 'Meta', mistralai: 'Mistral AI', qwen: 'Qwen', moonshotai: 'Moonshot AI',
   minimax: 'MiniMax', 'z-ai': 'Z.ai', nvidia: 'NVIDIA', microsoft: 'Microsoft', amazon: 'Amazon', cohere: 'Cohere',
-  perplexity: 'Perplexity', bytedance: 'ByteDance', yandex: 'Yandex', 'sber-gigachat': 'Sber GigaChat', gigachat: 'GigaChat',
-  stepfun: 'StepFun', xiaomi: 'Xiaomi', tencent: 'Tencent', baidu: 'Baidu', 'ibm-granite': 'IBM Granite', minimaxai: 'MiniMax AI',
+  perplexity: 'Perplexity', bytedance: 'ByteDance', 'bytedance-seed': 'ByteDance Seed', yandex: 'Yandex',
+  'sber-gigachat': 'Sber GigaChat', gigachat: 'GigaChat', stepfun: 'StepFun', xiaomi: 'Xiaomi', tencent: 'Tencent',
+  baidu: 'Baidu', 'ibm-granite': 'IBM Granite', minimaxai: 'MiniMax AI', nousresearch: 'Nous Research',
+  'arcee-ai': 'Arcee AI', 'aion-labs': 'Aion Labs', 'inference-net': 'Inference.net', 'nex-agi': 'Nex AGI',
+  rekaai: 'Reka AI', sao10k: 'Sao10K', 'anthracite-org': 'Anthracite', thudm: 'THUDM', 'ai21': 'AI21',
 };
 const POPULAR_VENDORS = ['openai', 'anthropic', 'google', 'deepseek', 'x-ai', 'meta-llama', 'mistralai', 'qwen'];
-const vendorLabel = (v) => VENDOR_NAMES[v.toLowerCase()] ?? v.charAt(0).toUpperCase() + v.slice(1);
 
-// The catalog filter ignores case, so "Qwen" and "qwen" are one vendor.
-function vendorOptions(vendors) {
-  const unique = [...new Map(vendors.map((v) => [v.toLowerCase(), v])).values()];
-  const rest = unique.filter((v) => !POPULAR_VENDORS.includes(v.toLowerCase()))
-    .sort((a, b) => vendorLabel(a).localeCompare(vendorLabel(b)));
-  return [...POPULAR_VENDORS.filter((v) => unique.some((u) => u.toLowerCase() === v)), ...rest]
-    .map((value) => ({ value, label: vendorLabel(value) }));
+// Sub-provider ids as Polza gives them ("deepinfra/turbo", "google-vertex/us-central1", "Cerebras").
+const ROUTE_NAMES = {
+  azure: 'Azure', openai: 'OpenAI', anthropic: 'Anthropic', 'cloud-ru': 'Cloud.ru', deepinfra: 'DeepInfra',
+  'google-vertex': 'Google Vertex', 'google-ai-studio': 'Google AI Studio', 'amazon-bedrock': 'Amazon Bedrock',
+  together: 'Together', novita: 'Novita', nebius: 'Nebius', parasail: 'Parasail', crusoe: 'Crusoe',
+  cloudflare: 'Cloudflare', sambanova: 'SambaNova', 'sambanova-turbo': 'SambaNova Turbo', wandb: 'W&B',
+  'wandb-legacy': 'W&B Legacy', coreweave: 'CoreWeave', akash: 'Akash', akashml: 'AkashML',
+  siliconflow: 'SiliconFlow', 'atlas-cloud': 'Atlas Cloud', gmicloud: 'GMI Cloud', primeintellect: 'Prime Intellect',
+  alibaba: 'Alibaba', groq: 'Groq', friendli: 'Friendli', chutes: 'Chutes', hyperbolic: 'Hyperbolic',
+  fireworks: 'Fireworks', cerebras: 'Cerebras', modelrun: 'ModelRun', mara: 'Mara', venice: 'Venice',
+  streamlake: 'StreamLake', inceptron: 'Inceptron', drouter: 'DRouter', 'claude-on-aws': 'Claude on AWS',
+  mistral: 'Mistral', xai: 'xAI', deepseek: 'DeepSeek', moonshotai: 'Moonshot AI', baseten: 'Baseten',
+  lambda: 'Lambda', infermatic: 'Infermatic', 'z-ai': 'Z.ai', minimax: 'MiniMax',
+};
+
+const titleCase = (s) => s.split(/[-_\s]+/).filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+const vendorLabel = (v) => VENDOR_NAMES[v.toLowerCase()] ?? titleCase(v);
+
+/** "google-vertex/us-central1" -> "Google Vertex · us-central1" */
+function routeLabel(name) {
+  const [base, ...rest] = name.split('/');
+  const label = ROUTE_NAMES[base.toLowerCase()] ?? (base === base.toLowerCase() ? titleCase(base) : base);
+  return rest.length ? `${label} · ${rest.join('/')}` : label;
+}
+
+const rubles = (n) => new Intl.NumberFormat(locale, { maximumFractionDigits: n < 10 ? 2 : n < 100 ? 1 : 0 }).format(n);
+
+/** All models in one list: popular developers first, then the rest A-Z, each developer under its heading. */
+function polzaModelOptions(models) {
+  const rank = (v) => {
+    const i = POPULAR_VENDORS.indexOf(v.toLowerCase());
+    return i < 0 ? POPULAR_VENDORS.length : i;
+  };
+  const byName = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
+  return [...models]
+    .map((m) => {
+      const vendor = m.vendor ?? m.id.split('/')[0];
+      // "OpenAI: GPT-4o-mini" is "GPT-4o-mini" under the OpenAI heading
+      return { value: m.id, label: m.name.replace(/^[^:]{1,40}:\s+/, ''), vendor, group: vendorLabel(vendor) };
+    })
+    .sort((a, b) => rank(a.vendor) - rank(b.vendor) || byName.compare(a.group, b.group) || byName.compare(a.label, b.label))
+    .map(({ value, label, group }) => ({ value, label, group }));
+}
+
+function routeOptions(routes) {
+  return [
+    { value: '', label: t('routeAuto'), detail: t('routeAutoNote') },
+    ...routes.map((r) => ({
+      value: r.name,
+      label: routeLabel(r.name),
+      detail: r.prompt || r.completion ? t('routePrice', { in: rubles(r.prompt), out: rubles(r.completion) }) : undefined,
+    })),
+  ];
 }
 
 const fresh = (entry) => entry && Date.now() - entry.at < LIST_TTL;
@@ -577,70 +624,83 @@ function renderPolza() {
   const cfg = state.settings.polza;
   const key = keyField('polza');
 
-  const vendorSelect = h('select', { class: 'select', id: 'polza-vendor' });
-  const vendor = h('div', { class: 'field' },
-    h('label', { for: 'polza-vendor' }, t('subprovider')),
-    vendorSelect,
-    h('div', { class: 'hint' }, t('subproviderHint')));
+  const model = modelField('polza', {
+    onRefresh: () => loadModels(true),
+    onChange: () => {
+      cfg.route = ''; // the sub-providers differ from model to model
+      persist();
+      loadRoutes();
+    },
+  });
 
-  const model = modelField('polza', { onRefresh: () => loadModels(true) });
+  const route = createDropdown({
+    id: 'polza-route',
+    texts: dropdownTexts,
+    onChange: (name) => {
+      cfg.route = name;
+      state.dirty = true;
+      persist();
+    },
+  });
+  const routeStatus = h('div', { class: 'hint status', 'aria-live': 'polite' });
+  const routeNode = h('div', { class: 'field' },
+    h('label', { for: 'polza-route' }, t('subprovider')),
+    route.node,
+    h('div', { class: 'hint' }, t('subproviderHint')),
+    routeStatus);
 
   async function loadModels(force = false) {
-    const vendorId = cfg.vendor;
     setBusy(model.refresh, true);
     model.status.textContent = '';
     try {
-      let entry = state.cache.polza?.[vendorId];
-      if (force || !fresh(entry)) {
-        entry = { models: await polzaModels(vendorId), at: Date.now() };
-        state.cache.polza = { ...state.cache.polza, [vendorId]: entry };
+      let entry = state.cache.polzaModels;
+      if (force || !fresh(entry) || !entry.models?.length) {
+        entry = { models: await polzaModels(), at: Date.now() };
+        state.cache.polzaModels = entry;
         saveCache();
         if (force) model.status.textContent = t('modelsUpdated', { n: entry.models.length });
       }
-      if (vendorId !== cfg.vendor) return; // the user switched vendor meanwhile
-      const options = entry.models.map((m) => ({ value: m.id, label: m.name }));
       if (entry.models.length && !entry.models.some((m) => m.id === cfg.model)) {
-        cfg.model = recommendPolzaModel(entry.models).id;
+        // the saved model is gone: the default one if Polza still has it, else a cheap and fast one
+        const fallback = DEFAULT_SETTINGS.polza.model;
+        cfg.model = entry.models.some((m) => m.id === fallback) ? fallback : recommendPolzaModel(entry.models).id;
+        cfg.route = '';
         state.dirty = true;
         persist();
+        loadRoutes();
       }
-      fillSelect(model.select, options, cfg.model);
+      model.picker.setOptions(polzaModelOptions(entry.models), cfg.model);
     } catch {
       model.status.textContent = t('modelsFailed');
-      fillSelect(model.select, [], cfg.model);
     } finally {
       setBusy(model.refresh, false);
     }
   }
 
-  async function loadVendors() {
-    let list = fresh(state.cache.polzaVendors) ? state.cache.polzaVendors.list : null;
-    if (!list) {
-      try {
-        list = await polzaVendors();
-        state.cache.polzaVendors = { list, at: Date.now() };
-        saveCache();
-      } catch {
-        list = state.cache.polzaVendors?.list ?? POPULAR_VENDORS;
-      }
+  async function loadRoutes() {
+    const modelId = cfg.model;
+    routeStatus.textContent = '';
+    let entry = state.cache.polzaRoutes?.[modelId];
+    route.setOptions(routeOptions(fresh(entry) ? entry.list : []), cfg.route);
+    if (fresh(entry)) return;
+    try {
+      entry = { list: await polzaRoutes(modelId), at: Date.now() };
+      // keep only lists that are still fresh, so the cache does not grow model by model forever
+      const kept = Object.fromEntries(Object.entries(state.cache.polzaRoutes ?? {}).filter(([, e]) => fresh(e)));
+      state.cache.polzaRoutes = { ...kept, [modelId]: entry };
+      saveCache();
+      if (modelId === cfg.model) route.setOptions(routeOptions(entry.list), cfg.route);
+    } catch {
+      if (modelId === cfg.model) routeStatus.textContent = t('routesFailed');
     }
-    if (!list.includes(cfg.vendor)) list = [cfg.vendor, ...list];
-    fillSelect(vendorSelect, vendorOptions(list), cfg.vendor);
   }
 
-  vendorSelect.addEventListener('change', () => {
-    cfg.vendor = vendorSelect.value;
-    state.dirty = true;
-    persist();
-    loadModels();
-  });
-
-  fillSelect(vendorSelect, vendorOptions([cfg.vendor]), cfg.vendor);
-  fillSelect(model.select, [], cfg.model);
-  loadVendors();
+  const cached = state.cache.polzaModels;
+  model.picker.setOptions(cached?.models?.length ? polzaModelOptions(cached.models) : [], cfg.model);
   loadModels();
+  loadRoutes();
 
-  return h('div', { class: 'config' }, key.node, vendor, model.node);
+  return h('div', { class: 'config' }, key.node, model.node, routeNode);
 }
 
 // ------------------------------------------------------------------- wiring
@@ -653,11 +713,6 @@ function bind() {
   });
   el.source.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); translateNow(); }
-  });
-  el.target.addEventListener('change', () => {
-    state.settings.targetLang = el.target.value;
-    persist();
-    translateNow();
   });
   el.clear.addEventListener('click', () => {
     el.source.value = '';

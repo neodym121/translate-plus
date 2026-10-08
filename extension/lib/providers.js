@@ -214,9 +214,11 @@ async function groq({ text, target, settings, signal }) {
 }
 
 async function polza({ text, target, settings, signal }) {
-  const { apiKey, model } = settings.polza;
+  const { apiKey, model, route } = settings.polza;
   if (!apiKey) throw new TranslateError('no_key');
-  return openAiChat({ url: 'https://polza.ai/api/v1/chat/completions', apiKey, model, text, target, signal });
+  // A picked sub-provider is the only one Polza may send the request to; none means Polza decides.
+  const extra = route ? { provider: { only: [route] } } : {};
+  return openAiChat({ url: 'https://polza.ai/api/v1/chat/completions', apiKey, model, text, target, extra, signal });
 }
 
 const GEMINI_SAFETY = [
@@ -363,23 +365,16 @@ export async function listModels(provider, apiKey, signal) {
 
 const POLZA_API = 'https://polza.ai/api/v1';
 
-/** Model vendors ("sub-providers") behind Polza: openai, anthropic, google, ... */
-export async function polzaVendors(signal) {
-  const res = await request(`${POLZA_API}/models/catalog?type=chat&limit=1`, { headers: { 'Accept-Language': 'en' } }, signal);
-  if (!res.ok) throw await httpError(res);
-  const data = await res.json();
-  const vendors = data?.meta?.availableProviders;
-  if (!Array.isArray(vendors) || !vendors.length) throw new TranslateError('bad_response');
-  return vendors;
-}
-
-/** Chat models of one Polza vendor. */
-export async function polzaModels(vendor, signal) {
+/**
+ * Every Polza chat model that takes text in and answers in text, from all developers.
+ * `vendor` is the developer part of the id (openai, anthropic, ...).
+ */
+export async function polzaModels(signal) {
   const models = [];
   let totalPages = 1;
-  for (let page = 1; page <= totalPages && page <= 5; page++) {
+  for (let page = 1; page <= totalPages && page <= 10; page++) {
     const res = await request(
-      `${POLZA_API}/models/catalog?type=chat&limit=100&page=${page}&providers=${encodeURIComponent(vendor)}`,
+      `${POLZA_API}/models/catalog?type=chat&limit=100&page=${page}`,
       { headers: { 'Accept-Language': 'en' } },
       signal,
     );
@@ -387,15 +382,37 @@ export async function polzaModels(vendor, signal) {
     const data = await res.json();
     totalPages = data?.meta?.totalPages ?? 1;
     for (const m of data?.data ?? []) {
+      if (!m?.id || !isTextModel(m, m.id, m.name)) continue;
       models.push({
         id: m.id,
         name: m.name ?? m.id,
+        vendor: m.id.split('/')[0],
         tags: m.task_tags ?? [],
         price: Number(m.top_provider?.pricing?.prompt_per_million) || 0,
       });
     }
   }
   return models;
+}
+
+/**
+ * The services ("sub-providers") that run one Polza model, cheapest first.
+ * Prices are roubles per million tokens of input (`prompt`) and output (`completion`).
+ */
+export async function polzaRoutes(modelId, signal) {
+  const path = String(modelId).split('/').map(encodeURIComponent).join('/');
+  const res = await request(`${POLZA_API}/models/${path}`, { headers: { 'Accept-Language': 'en' } }, signal);
+  if (!res.ok) throw await httpError(res);
+  const data = await res.json();
+  if (!Array.isArray(data?.providers)) throw new TranslateError('bad_response');
+  return data.providers
+    .filter((p) => typeof p?.name === 'string' && p.name)
+    .map((p) => ({
+      name: p.name,
+      prompt: Number(p.pricing?.prompt_per_million) || 0,
+      completion: Number(p.pricing?.completion_per_million) || 0,
+    }))
+    .sort((a, b) => a.prompt + a.completion - (b.prompt + b.completion));
 }
 
 /** A cheap, fast, non-reasoning model is the best default for translation. */

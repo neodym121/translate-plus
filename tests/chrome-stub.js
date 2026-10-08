@@ -120,7 +120,7 @@
       const body = bodyOf(init);
       return json([{ translations: [{ text: `(bing→${body.to}) ${body.text}`, to: body.to }], detectedLanguage: { language: 'en' } }]);
     }
-    if (host === 'polza.ai' && url.pathname.includes('/models/catalog')) {
+    if (host === 'polza.ai' && url.pathname.startsWith('/api/v1/models')) { // catalog and one model's sub-providers
       return realFetch(`/__proxy?url=${encodeURIComponent(url.href)}`);
     }
     if (host === 'api.groq.com' && url.pathname.endsWith('/models')) {

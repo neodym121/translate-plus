@@ -10,7 +10,7 @@ import { LANGUAGES, providerLangCode, normalizeLangCode, languageName } from '..
 import { pickLocale, makeT } from '../extension/lib/i18n.js';
 import { loadSettings } from '../extension/lib/settings.js';
 import {
-  translate, listModels, isTextModel, polzaVendors, polzaModels, recommendPolzaModel, TranslateError,
+  translate, listModels, isTextModel, polzaModels, polzaRoutes, recommendPolzaModel, TranslateError,
 } from '../extension/lib/providers.js';
 
 const roundTrip = (text, max) => {
@@ -125,6 +125,8 @@ test('settings default to English for both the interface and the translation', a
     const fresh = await loadSettings();
     assert.equal(fresh.uiLang, 'en');
     assert.equal(fresh.targetLang, 'en');
+    assert.equal(fresh.polza.model, 'anthropic/claude-haiku-5.5');
+    assert.equal(fresh.polza.route, ''); // Polza picks the sub-provider
     stored = { settings: { uiLang: 'ru', targetLang: 'de' } };
     const kept = await loadSettings();
     assert.equal(kept.uiLang, 'ru');
@@ -205,6 +207,14 @@ test('polza: request shape, reasoning tags stripped', async () => {
   assert.equal(calls[0].url, '/polza.ai/api/v1/chat/completions');
   assert.equal(calls[0].headers.authorization, 'Bearer pza_test');
   assert.equal(calls[0].body.model, 'openai/gpt-4o-mini');
+  assert.equal(calls[0].body.provider, undefined); // no sub-provider picked: Polza decides
+});
+
+test('polza: a picked sub-provider is the only one allowed', async () => {
+  calls = [];
+  behaviour = () => chatReply('Привет');
+  await ask('polza', { settings: { ...settings, polza: { ...settings.polza, route: 'deepinfra/turbo' } } });
+  assert.deepEqual(calls[0].body.provider, { only: ['deepinfra/turbo'] });
 });
 
 test('llm: retries without temperature when the model rejects it', async () => {
@@ -334,20 +344,40 @@ test('gemini: a model that refuses a system instruction (Gemma) gets the rules i
   assert.match(calls[1].body.contents[0].parts[0].text, /into Russian[\s\S]*Text to translate:\nHello$/);
 });
 
-test('polza catalog: vendors, paged models, recommendation', async () => {
+test('polza catalog: every developer\'s text models, page by page, and a recommendation', async () => {
+  const arch = (input, output) => ({ input_modalities: input, output_modalities: output });
   behaviour = (c) => {
-    if (/limit=1(&|$)/.test(c.url)) return { json: { data: [], meta: { availableProviders: ['openai', 'google'] } } };
+    assert.doesNotMatch(c.url, /providers=/); // one list for all developers
     const page = Number(/page=(\d+)/.exec(c.url)[1]);
-    assert.match(c.url, /providers=openai/);
     return { json: { data: page === 1
-      ? [{ id: 'openai/gpt-5', name: 'GPT-5', task_tags: ['чат', 'рассуждения'], top_provider: { pricing: { prompt_per_million: '149' } } }]
-      : [{ id: 'openai/gpt-4o-mini', name: 'GPT-4o-mini', task_tags: ['чат', 'дешёвая', 'быстрая'], top_provider: { pricing: { prompt_per_million: '17' } } }],
+      ? [
+        { id: 'openai/gpt-5', name: 'OpenAI: GPT-5', task_tags: ['чат', 'рассуждения'], architecture: arch(['text', 'image'], ['text']), top_provider: { pricing: { prompt_per_million: '149' } } },
+        { id: 'openai/gpt-4o-mini-tts', name: 'OpenAI: TTS', architecture: arch(['text'], ['audio']) },
+      ]
+      : [
+        { id: 'anthropic/claude-haiku', name: 'Anthropic: Claude Haiku', task_tags: ['чат', 'дешёвая', 'быстрая'], architecture: arch(['text'], ['text']), top_provider: { pricing: { prompt_per_million: '17' } } },
+        { id: 'openai/whisper-1', name: 'Whisper', architecture: arch(['audio'], ['text']) },
+      ],
     meta: { totalPages: 2 } } };
   };
-  assert.deepEqual(await polzaVendors(), ['openai', 'google']);
-  const models = await polzaModels('openai');
-  assert.equal(models.length, 2);
-  assert.equal(recommendPolzaModel(models).id, 'openai/gpt-4o-mini');
+  const models = await polzaModels();
+  assert.deepEqual(models.map((m) => [m.id, m.vendor]), [['openai/gpt-5', 'openai'], ['anthropic/claude-haiku', 'anthropic']]);
+  assert.equal(recommendPolzaModel(models).id, 'anthropic/claude-haiku');
+});
+
+test('polza sub-providers: the services that run one model, cheapest first', async () => {
+  calls = [];
+  behaviour = () => ({ json: { id: 'meta-llama/llama-3.3-70b-instruct', providers: [
+    { name: 'Cerebras', pricing: { prompt_per_million: '101.6', completion_per_million: '143.5' } },
+    { name: 'deepinfra/turbo', pricing: { prompt_per_million: '11.9', completion_per_million: '38.2' } },
+    { name: '' },
+  ] } });
+  const routes = await polzaRoutes('meta-llama/llama-3.3-70b-instruct');
+  assert.equal(calls[0].url, '/polza.ai/api/v1/models/meta-llama/llama-3.3-70b-instruct');
+  assert.deepEqual(routes, [
+    { name: 'deepinfra/turbo', prompt: 11.9, completion: 38.2 },
+    { name: 'Cerebras', prompt: 101.6, completion: 143.5 },
+  ]);
 });
 
 // ---------------------------------------------------------------- live services
@@ -399,10 +429,12 @@ live('google + bing: every language in the list is accepted', async () => {
 live('polza: public catalog is reachable', async () => {
   routeToMock = false;
   try {
-    const vendors = await polzaVendors();
-    assert.ok(vendors.includes('openai'));
-    const models = await polzaModels('openai');
+    const models = await polzaModels();
+    assert.ok(models.length > 100);
     assert.ok(models.some((m) => m.id === 'openai/gpt-4o-mini'));
+    assert.ok(models.some((m) => m.id === 'anthropic/claude-haiku-5.5')); // the default model
+    const routes = await polzaRoutes('openai/gpt-4o-mini');
+    assert.ok(routes.length > 0 && routes.every((r) => r.name));
   } finally {
     routeToMock = true;
   }

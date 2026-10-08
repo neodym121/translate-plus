@@ -11,7 +11,7 @@ export const DEFAULT_SETTINGS = {
   theme: 'light',
   groq: { apiKey: '', model: 'llama-3.3-70b-versatile' },
   gemini: { apiKey: '', model: 'gemini-flash-latest' },
-  polza: { apiKey: '', vendor: 'openai', model: 'openai/gpt-4o-mini' },
+  polza: { apiKey: '', model: 'anthropic/claude-haiku-5.5', route: '' }, // route: the sub-provider, '' = Polza picks
 };
 
 function merge(base, saved) {

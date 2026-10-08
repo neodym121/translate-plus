@@ -39,7 +39,7 @@
     async function ready(frame) {
       await new Promise((r) => frame.addEventListener('load', r, { once: true }));
       const doc = frame.contentDocument;
-      while (!doc.getElementById('target')?.options.length) await sleep(20);
+      while (!doc.querySelector('#target .dd-value')?.textContent) await sleep(20);
       return doc;
     }
 
