@@ -1,0 +1,7 @@
+# local notes, design source and Claude Code settings
+polza-ai-reference.md
+стиль/
+.claude/
+
+node_modules/
+*.zip

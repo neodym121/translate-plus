@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Translate+</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- Main screen -->
+    <section id="view-main" class="view">
+      <header class="top">
+        <h1 class="brand">
+          <img class="brand-mark" src="../icons/logo.svg" alt="" width="28" height="28">
+          <span class="brand-name">Translate<span class="plus">+</span></span>
+        </h1>
+        <button id="btn-settings" class="icon-btn" type="button" data-i18n-label="settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </button>
+      </header>
+
+      <div class="langbar">
+        <span id="detected" class="badge" title=""></span>
+        <svg class="arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        <select id="target" class="select" data-i18n-label="targetLabel"></select>
+      </div>
+
+      <div class="card source">
+        <textarea id="source" spellcheck="false" maxlength="10000" data-i18n-placeholder="sourcePlaceholder"></textarea>
+        <div class="card-foot">
+          <span id="count" class="caption"></span>
+          <button id="btn-clear" class="icon-btn small" type="button" data-i18n-label="clear" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="result-card" class="card result">
+        <button id="btn-copy" class="icon-btn small copy" type="button" data-i18n-label="copy" hidden>
+          <svg class="i-copy" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg>
+          <svg class="i-check" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        </button>
+        <div id="result" class="result-text is-empty" aria-live="polite"></div>
+        <div id="result-actions" class="result-actions" hidden></div>
+      </div>
+    </section>
+
+    <!-- Settings screen -->
+    <section id="view-settings" class="view" hidden>
+      <header class="top">
+        <div class="brand">
+          <button id="btn-back" class="icon-btn" type="button" data-i18n-label="back">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+          </button>
+          <h1 class="brand-name" data-i18n="settings"></h1>
+        </div>
+      </header>
+
+      <div class="scroll">
+        <h2 class="section-title" data-i18n="languageSection"></h2>
+        <div class="card toggle-row static">
+          <span class="row-text">
+            <span class="row-title" id="ui-lang-title" data-i18n="uiLanguage"></span>
+            <span class="row-note" data-i18n="uiLanguageNote"></span>
+          </span>
+          <!-- each language is named in itself, so it can be found whatever the current one is -->
+          <div id="ui-lang" class="segmented" role="radiogroup" aria-labelledby="ui-lang-title">
+            <label><input type="radio" name="ui-lang" value="en"><span lang="en">English</span></label>
+            <label><input type="radio" name="ui-lang" value="ru"><span lang="ru">Русский</span></label>
+          </div>
+        </div>
+
+        <h2 class="section-title" data-i18n="providerSection"></h2>
+        <div class="card list" id="provider-list" role="radiogroup"></div>
+
+        <h2 class="section-title" data-i18n="appearanceSection"></h2>
+        <label class="card toggle-row">
+          <span class="row-text">
+            <span class="row-title" data-i18n="darkTheme"></span>
+            <span class="row-note" data-i18n="darkThemeNote"></span>
+          </span>
+          <input id="dark-theme" class="switch" type="checkbox">
+        </label>
+
+        <h2 class="section-title" data-i18n="pageSection"></h2>
+        <label class="card toggle-row">
+          <span class="row-text">
+            <span class="row-title" data-i18n="showIcon"></span>
+            <span class="row-note" data-i18n="showIconNote"></span>
+          </span>
+          <input id="show-icon" class="switch" type="checkbox">
+        </label>
+      </div>
+    </section>
+
+  </div>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

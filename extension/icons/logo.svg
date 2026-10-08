@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img">
+  <title>Bilingual lines</title>
+  <path d="M72 16H184A56 56 0 0 1 240 72V184A56 56 0 0 1 184 240H72A56 56 0 0 1 16 184V72A56 56 0 0 1 72 16Z" fill="#0B0B0B"/>
+  <path d="M67 49H189A13 13 0 0 1 189 75H67A13 13 0 0 1 67 49Z" fill="#FFFFFF"/>
+  <path d="M67 93H133A13 13 0 0 1 133 119H67A13 13 0 0 1 67 93Z" fill="#E3120B"/>
+  <path d="M67 137H189A13 13 0 0 1 189 163H67A13 13 0 0 1 67 137Z" fill="#FFFFFF"/>
+  <path d="M67 181H133A13 13 0 0 1 133 207H67A13 13 0 0 1 67 181Z" fill="#E3120B"/>
+</svg>

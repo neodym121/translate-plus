@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Translate+ screenshot</title>
+  <!-- The README screenshot: the main screen with a translation next to the settings, in one interface language.
+       Served by tests/dev-server.mjs at /__shots?lang=en|ru; captured at 892x586 (or 1784x1172 with &zoom=2)
+       into assets/screenshot-en.png and assets/screenshot-ru.png. -->
+  <style>
+    html, body { margin: 0; background: #f0eee6; }
+    .stage { display: flex; gap: 24px; padding: 32px; width: max-content; }
+    iframe {
+      display: block;
+      width: 400px;
+      height: 520px;
+      border: 1px solid #dedcd1;
+      border-radius: 14px;
+      background: #faf9f5;
+      box-shadow: 0 1px 2px rgb(20 20 19 / 0.06), 0 8px 24px rgb(20 20 19 / 0.08);
+    }
+  </style>
+</head>
+<body>
+  <div class="stage" id="stage"></div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const lang = params.get('lang') === 'ru' ? 'ru' : 'en';
+    document.documentElement.style.zoom = params.get('zoom') ?? 1;   // ?zoom=2 for a sharp capture at 1x device pixels
+    const SAMPLE = {
+      en: 'Die beste Zeit, einen Baum zu pflanzen, war vor zwanzig Jahren. Die zweitbeste Zeit ist jetzt.',
+      ru: 'The best time to plant a tree was twenty years ago. The second best time is now.',
+    };
+
+    // The stub keeps chrome.storage in this origin's web storage; start both windows from the same clean settings.
+    localStorage.setItem('stub.local', JSON.stringify({ settings: { uiLang: lang, targetLang: lang, provider: 'google', theme: 'light' } }));
+    sessionStorage.removeItem('stub.session');
+
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    async function ready(frame) {
+      await new Promise((r) => frame.addEventListener('load', r, { once: true }));
+      const doc = frame.contentDocument;
+      while (!doc.getElementById('target')?.options.length) await sleep(20);
+      return doc;
+    }
+
+    function frame() {
+      const node = document.createElement('iframe');
+      node.src = '/popup/popup.html?still=1&latency=0';
+      document.getElementById('stage').append(node);
+      return node;
+    }
+
+    const main = frame();
+    const settings = frame();
+
+    ready(main).then((doc) => {
+      const source = doc.getElementById('source');
+      source.value = SAMPLE[lang];
+      source.dispatchEvent(new Event('input', { bubbles: true }));
+      source.blur();
+    });
+    ready(settings).then((doc) => doc.getElementById('btn-settings').click());
+  </script>
+</body>
+</html>
