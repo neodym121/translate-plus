@@ -5,3 +5,7 @@ polza-ai-reference.md
 
 node_modules/
 *.zip
+
+# web-ext sign output (the signed .xpi goes to GitHub Releases, not into git)
+web-ext-artifacts/
+*.xpi

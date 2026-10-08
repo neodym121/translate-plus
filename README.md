@@ -8,7 +8,7 @@
   <b>English</b> · <a href="README.ru.md">Русский</a>
 </p>
 
-Translate+ is a browser translator extension. Select text on any page and get the translation right away, from Google, Bing or an AI model (Groq, Gemini, Polza). It works in Chromium-based browsers: Chrome, Edge, Brave, Opera, Vivaldi and others.
+Translate+ is a browser translator extension. Select text on any page and get the translation right away, from Google, Bing or an AI model (Groq, Gemini, Polza). It works in Chromium-based browsers (Chrome, Edge, Brave, Opera, Vivaldi and others) and in Firefox-based ones (Firefox, Waterfox, LibreWolf, Floorp, Zen).
 
 <p align="center">
   <img src="assets/screenshot-en.png" width="720" alt="Translate+ window: a translation and the settings" />
@@ -26,6 +26,8 @@ Translate+ is a browser translator extension. Select text on any page and get th
 
 ## Installation
 
+### Chrome, Edge and other Chromium browsers
+
 1. Download **`translate-plus-chromium.zip`** from the [latest release](https://github.com/neodym121/translate-plus/releases/latest) and unzip it. Keep the `translate-plus-chromium` folder somewhere permanent: the browser loads the extension from it.
 2. Open the extensions page: `chrome://extensions` in Chrome, `edge://extensions` in Edge, `brave://extensions` in Brave, `opera://extensions` in Opera, `vivaldi://extensions` in Vivaldi.
 3. Turn on **Developer mode** (a switch in the top right corner; in Edge, in the left panel).
@@ -34,7 +36,20 @@ Translate+ is a browser translator extension. Select text on any page and get th
 
 **Updating:** download the new release, replace the contents of the folder, and press the reload button (↻) on the extension's card.
 
-The selection icon doesn't appear where browsers don't let extensions in (`chrome://` pages, the Chrome Web Store, the built-in PDF viewer). There, open the window from the toolbar and paste the text.
+### Firefox and other Gecko browsers
+
+Version 140 or newer.
+
+1. Download **`translate-plus-firefox.xpi`** from the [latest release](https://github.com/neodym121/translate-plus/releases/latest). The file is signed by Mozilla.
+2. Open `about:addons`, click the gear ⚙ and choose **Install Add-on From File…**, then pick the file. Dragging the file onto the browser window works too.
+3. Confirm the install. Translate+ asks for access to all websites: the selection icon needs it on every page, and the translation services are reached through it.
+4. Pin Translate+ to the toolbar from the puzzle-piece menu, and reload the tabs that were already open.
+
+**Updating:** the browser installs new versions by itself. To check right away: `about:addons` → ⚙ → **Check for Updates**.
+
+If site access gets switched off in the add-on's permissions, the window shows a notice with an **Allow** button.
+
+The selection icon doesn't appear where browsers don't let extensions in (`chrome://` and `about:` pages, the Chrome Web Store and addons.mozilla.org, the built-in PDF viewer). There, open the window from the toolbar and paste the text.
 
 ## Translation providers
 
@@ -52,13 +67,15 @@ For the AI providers, the model list comes from the provider's API (when you ent
 
 ## Development
 
-The extension is plain JavaScript with no build step: `extension/` is the extension itself.
+The extension is plain JavaScript with no build step: `extension/` is the Chromium extension itself, `gecko-extension/` the Firefox one. The Firefox folder is a copy with its own manifest and a few changes of its own; the tests check that every other file stays identical in both.
 
 ```bash
 node --test tests/lib.test.mjs          # text splitting and the providers against a mock server
 LIVE=1 node --test tests/lib.test.mjs   # plus real requests to Google and Bing
 node tests/dev-server.mjs               # the window in an ordinary tab: http://localhost:5173/popup/popup.html
                                         # the selection icon and in-place translation: http://localhost:5173/__page
+node tests/dev-server.mjs 5174 gecko-extension   # the same for the Firefox folder
+npx web-ext lint --self-hosted --source-dir gecko-extension   # Mozilla's checks for the Firefox build
 node tools/make-icons.mjs               # rebuild extension/icons/icon*.png from the logo geometry
 ```
 

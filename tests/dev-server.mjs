@@ -1,8 +1,9 @@
 // Local harness for looking at the extension UI in an ordinary browser tab.
 // Serves extension/ and injects tests/chrome-stub.js (an in-memory `chrome` API
 // with canned translations) into the popup page and into tests/page.html.
+// A second argument serves another folder: `node tests/dev-server.mjs 5174 gecko-extension`.
 //
-//   node tests/dev-server.mjs [port]
+//   node tests/dev-server.mjs [port] [folder]
 //   http://localhost:5173/popup/popup.html?selection=Hello%20world
 //   http://localhost:5173/__page
 //   http://localhost:5173/__shots?lang=ru   (README screenshot: main screen and settings side by side; &zoom=2 for a sharp capture)
@@ -12,8 +13,8 @@ import { dirname, extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const EXT = join(HERE, '..', 'extension');
 const PORT = Number(process.argv[2] ?? 5173);
+const EXT = join(HERE, '..', process.argv[3] ?? 'extension');
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',

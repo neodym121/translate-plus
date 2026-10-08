@@ -8,7 +8,7 @@
   <a href="README.md">English</a> · <b>Русский</b>
 </p>
 
-Translate+ — браузерное расширение-переводчик. Выделите текст на любой странице и сразу получите перевод от Google, Bing или ИИ-модели (Groq, Gemini, Polza). Работает в браузерах на Chromium: Chrome, Edge, Brave, Opera, Vivaldi и других.
+Translate+ — браузерное расширение-переводчик. Выделите текст на любой странице и сразу получите перевод от Google, Bing или ИИ-модели (Groq, Gemini, Polza). Работает в браузерах на Chromium (Chrome, Edge, Brave, Opera, Vivaldi и других) и на Firefox (Firefox, Waterfox, LibreWolf, Floorp, Zen).
 
 <p align="center">
   <img src="assets/screenshot-ru.png" width="720" alt="Окно Translate+: перевод и настройки" />
@@ -26,6 +26,8 @@ Translate+ — браузерное расширение-переводчик. �
 
 ## Установка
 
+### Chrome, Edge и другие браузеры на Chromium
+
 1. Скачайте **`translate-plus-chromium.zip`** из [последнего релиза](https://github.com/neodym121/translate-plus/releases/latest) и распакуйте. Папку `translate-plus-chromium` положите туда, где она останется: браузер загружает расширение прямо из неё.
 2. Откройте страницу расширений: `chrome://extensions` в Chrome, `edge://extensions` в Edge, `brave://extensions` в Brave, `opera://extensions` в Opera, `vivaldi://extensions` в Vivaldi.
 3. Включите **«Режим разработчика»** (переключатель справа вверху; в Edge — на левой панели).
@@ -34,7 +36,20 @@ Translate+ — браузерное расширение-переводчик. �
 
 **Обновление:** скачайте новый релиз, замените содержимое папки и нажмите кнопку обновления (↻) на карточке расширения.
 
-Значок у выделения не появляется там, куда браузер не пускает расширения (страницы `chrome://`, Chrome Web Store, встроенный просмотр PDF). Там откройте окно кнопкой на панели и вставьте текст.
+### Firefox и другие браузеры на Gecko
+
+Нужна версия 140 или новее.
+
+1. Скачайте **`translate-plus-firefox.xpi`** из [последнего релиза](https://github.com/neodym121/translate-plus/releases/latest). Файл подписан Mozilla.
+2. Откройте `about:addons`, нажмите шестерёнку ⚙ и выберите **«Установить дополнение из файла…»**, затем укажите файл. Можно и просто перетащить файл в окно браузера.
+3. Подтвердите установку. Translate+ попросит доступ ко всем сайтам: без него значок у выделения не появится на страницах, а сервисы перевода будут недоступны.
+4. Закрепите Translate+ на панели через меню с пазлом и обновите вкладки, которые уже были открыты.
+
+**Обновление:** браузер ставит новые версии сам. Проверить сразу: `about:addons` → ⚙ → **«Проверить наличие обновлений»**.
+
+Если доступ к сайтам выключить в разрешениях дополнения, окно покажет плашку с кнопкой **«Разрешить»**.
+
+Значок у выделения не появляется там, куда браузер не пускает расширения (страницы `chrome://` и `about:`, Chrome Web Store и addons.mozilla.org, встроенный просмотр PDF). Там откройте окно кнопкой на панели и вставьте текст.
 
 ## Провайдеры перевода
 
@@ -52,13 +67,15 @@ Translate+ — браузерное расширение-переводчик. �
 
 ## Разработка
 
-Расширение написано на чистом JavaScript без сборки: папка `extension/` — это и есть расширение.
+Расширение написано на чистом JavaScript без сборки: папка `extension/` — это и есть расширение для Chromium, `gecko-extension/` — для Firefox. Папка для Firefox — копия со своим манифестом и несколькими собственными правками; тесты следят, чтобы остальные файлы в обеих папках совпадали.
 
 ```bash
 node --test tests/lib.test.mjs          # разбивка текста и провайдеры на mock-сервере
 LIVE=1 node --test tests/lib.test.mjs   # плюс реальные запросы к Google и Bing
 node tests/dev-server.mjs               # окно в обычной вкладке: http://localhost:5173/popup/popup.html
                                         # значок и перевод на месте: http://localhost:5173/__page
+node tests/dev-server.mjs 5174 gecko-extension   # то же для папки Firefox
+npx web-ext lint --self-hosted --source-dir gecko-extension   # проверки Mozilla для сборки под Firefox
 node tools/make-icons.mjs               # пересобрать extension/icons/icon*.png из геометрии логотипа
 ```
 

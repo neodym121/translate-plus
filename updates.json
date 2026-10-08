@@ -1,0 +1,12 @@
+{
+  "addons": {
+    "translate-plus@neodym121": {
+      "updates": [
+        {
+          "version": "1.2.1",
+          "update_link": "https://github.com/neodym121/translate-plus/releases/download/firefox-v1.2.1/translate-plus-firefox.xpi"
+        }
+      ]
+    }
+  }
+}

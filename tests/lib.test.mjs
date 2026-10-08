@@ -3,6 +3,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import { readFile, readdir } from 'node:fs/promises';
+import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { splitIntoChunks, joinChunks, mapLimit } from '../extension/lib/chunk.js';
 import { batchSegments, translateSegments } from '../extension/lib/inplace.js';
@@ -378,6 +381,62 @@ test('polza sub-providers: the services that run one model, cheapest first', asy
     { name: 'deepinfra/turbo', prompt: 11.9, completion: 38.2 },
     { name: 'Cerebras', prompt: 101.6, completion: 143.5 },
   ]);
+});
+
+// ------------------------------------------------------------------ gecko build
+
+const ROOT = new URL('../', import.meta.url);
+const readJson = async (path) => JSON.parse(await readFile(new URL(path, ROOT), 'utf8'));
+
+// The files of gecko-extension/ that are meant to differ from extension/; the rest are plain copies.
+const GECKO_OWN = new Set(['manifest.json', 'background.js', 'lib/i18n.js', 'popup/popup.html', 'popup/popup.css', 'popup/popup.js']);
+
+async function listFiles(dir) {
+  const base = fileURLToPath(new URL(dir, ROOT));
+  const entries = await readdir(base, { recursive: true, withFileTypes: true });
+  return entries.filter((e) => e.isFile()).map((e) => relative(base, join(e.parentPath, e.name)).replaceAll('\\', '/')).sort();
+}
+
+test('gecko build: Firefox manifest, in step with the Chromium one and with updates.json', async () => {
+  const [chromium, gecko, updates] = await Promise.all([
+    readJson('extension/manifest.json'), readJson('gecko-extension/manifest.json'), readJson('updates.json'),
+  ]);
+  assert.deepEqual(gecko.background, { scripts: ['background.js'], type: 'module' });
+  const { id, strict_min_version: min, update_url: updateUrl, data_collection_permissions: data } = gecko.browser_specific_settings.gecko;
+  assert.equal(id, 'translate-plus@neodym121'); // fixed for good once a build is signed
+  assert.ok(Number.parseFloat(min) >= 140, 'data_collection_permissions needs Firefox 140+');
+  assert.deepEqual(data.required, ['websiteContent']);
+  assert.equal(updateUrl, 'https://raw.githubusercontent.com/neodym121/translate-plus/main/updates.json');
+
+  // Apart from the browser-specific keys, both builds declare the same: version, permissions, content script.
+  const common = ({ background, minimum_chrome_version, browser_specific_settings, ...rest }) => rest;
+  assert.deepEqual(common(gecko), common(chromium));
+
+  // Firefox finds the current version in updates.json, pointing at its release asset.
+  const entry = updates.addons[id]?.updates.find((u) => u.version === gecko.version);
+  assert.ok(entry, `updates.json has no entry for ${gecko.version}`);
+  assert.match(entry.update_link, new RegExp(`/releases/download/[\\w-]*v${gecko.version.replaceAll('.', '\\.')}/translate-plus-firefox\\.xpi$`));
+});
+
+test('gecko build: shared files are plain copies of extension/', async () => {
+  const [chromium, gecko] = await Promise.all([listFiles('extension/'), listFiles('gecko-extension/')]);
+  assert.deepEqual(gecko, chromium, 'the two folders hold different files');
+  const text = (file, buf) => (/\.(png|woff2)$/.test(file) ? buf : Buffer.from(buf.toString('utf8').replace(/\r\n/g, '\n')));
+  const drifted = [];
+  for (const file of chromium) {
+    if (GECKO_OWN.has(file)) continue;
+    const [a, b] = await Promise.all([readFile(new URL(`extension/${file}`, ROOT)), readFile(new URL(`gecko-extension/${file}`, ROOT))]);
+    if (!text(file, a).equals(text(file, b))) drifted.push(file);
+  }
+  assert.deepEqual(drifted, [], 'changed in one folder only: carry the change over to the other');
+});
+
+test('gecko build: the site access notice speaks both languages', async () => {
+  const { makeT: geckoT } = await import('../gecko-extension/lib/i18n.js');
+  for (const key of ['accessMissing', 'accessAllow']) {
+    assert.notEqual(geckoT('en')(key), key);
+    assert.notEqual(geckoT('ru')(key), geckoT('en')(key));
+  }
 });
 
 // ---------------------------------------------------------------- live services

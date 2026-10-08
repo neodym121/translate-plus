@@ -1,0 +1,694 @@
+/* Translate+ — built on the tokens in tokens.css: claude.ai's classic light theme (ivory canvas, white cards,
+   linen hairlines, ink text, Charcoal for the one filled button).
+   Every colour below goes through a semantic variable so the dark theme is a swap of values only. */
+
+:root {
+  /* type: the system's own faces when installed, else the substitutes DESIGN.md names (fonts.css) */
+  --font-sans: 'Anthropic Sans', 'Inter Variable', var(--font-anthropic-sans);
+  --font-serif: 'Anthropic Serif', 'Source Serif 4 Variable', var(--font-anthropic-serif);
+  --size-ui: 14px;              /* labels and controls: the 14px step of DESIGN.md's sans sizes */
+  --leading-ui: 1.43;
+  --size-input: var(--text-body);   /* the text itself, typed and translated: body, 15px / 1.63 */
+  --size-output: var(--text-body);
+  /* the "+" of the wordmark: DESIGN.md keeps the brand's warm orange for the logo, and only there */
+  --brand-mark: #d97757;
+  /* surfaces */
+  --bg: var(--color-ivory-canvas);
+  --card: var(--color-pure-white);
+  --card-line: var(--color-linen-border);
+  --nested: var(--color-warm-parchment);
+  --row-hover: var(--color-ivory-canvas);
+  /* text */
+  --text: var(--color-ink-black);
+  --text-2: var(--color-warm-slate);
+  --text-muted: var(--color-stone-gray);
+  --text-faint: var(--color-stone-gray);   /* placeholders: Stone Gray in DESIGN.md as well */
+  --selection: var(--color-dust-blue);     /* the system's one accent, as a wash */
+  /* controls */
+  --control-bg: var(--color-pure-white);
+  --control-border: var(--color-linen-border);
+  --control-border-hover: var(--color-cool-stone);
+  --control-border-focus: var(--color-charcoal);
+  --control-focus-ring: none;              /* the darker border is the whole focus state */
+  --hover: var(--color-warm-parchment);
+  --hover-on-nested: var(--color-linen-border);
+  --ring: var(--color-charcoal);
+  --btn-bg: var(--color-charcoal);
+  --btn-bg-hover: var(--color-warm-slate);
+  --btn-text: var(--color-pure-white);
+  --btn-ghost-hover: var(--color-warm-parchment);
+  --switch-off: var(--color-cool-stone);
+  --switch-on: var(--color-charcoal);
+  --switch-thumb: var(--color-pure-white);
+  --switch-thumb-on: var(--color-pure-white);
+  --radio-off: var(--color-cool-stone);
+  --radio-on: var(--color-charcoal);
+  --scrollbar: var(--color-cool-stone);
+  --mark-ring: 0 0 0 0 transparent;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233d3d3a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  --search-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2373726c' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='M16 16l4.5 4.5'/%3E%3C/svg%3E");
+  --check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+  --menu-shadow: 0 10px 28px rgb(20 20 19 / 0.12), 0 2px 6px rgb(20 20 19 / 0.06);
+  /* layout */
+  --gutter: 8px;                /* window edge -> boxes */
+}
+
+/* Dark: the stylesheet in стиль/ is light only, so this is the one Typr uses (AI innovations/typr/src/style.css),
+   the dark half of the same classic claude.ai palette: surfaces 1f1e1d / 262624 / 30302e / 3d3d3a, hairlines and
+   hovers as parchment at low opacity, parchment text, a parchment primary button. Names in the comments are Typr's. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #262624;                              /* surface-canvas */
+  --card: #30302e;                            /* surface-card */
+  --card-line: rgb(248 248 246 / 0.08);       /* border */
+  --nested: #1f1e1d;                          /* surface-sidebar: sunk below the canvas, as Warm Parchment is in light */
+  --row-hover: rgb(248 248 246 / 0.05);       /* surface-hover */
+  --text: #f8f8f6;                            /* text-primary */
+  --text-2: #c2c0b6;                          /* text-secondary */
+  --text-muted: #9c9a92;                      /* text-muted */
+  --text-faint: #7b7974;                      /* text-faint */
+  --selection: rgb(248 248 246 / 0.18);
+  --control-bg: #30302e;
+  --control-border: rgb(248 248 246 / 0.14);  /* border-strong */
+  --control-border-hover: rgb(248 248 246 / 0.24);  /* border-hover */
+  --control-border-focus: rgb(248 248 246 / 0.4);   /* border-focus */
+  --control-focus-ring: 0 0 0 3px rgb(248 248 246 / 0.1);  /* focus-halo */
+  --hover: rgb(248 248 246 / 0.08);           /* surface-active */
+  --hover-on-nested: rgb(248 248 246 / 0.08);
+  --ring: rgb(248 248 246 / 0.4);             /* border-focus */
+  --btn-bg: #f8f8f6;
+  --btn-bg-hover: #ffffff;
+  --btn-text: #121212;                        /* text-on-light */
+  --btn-ghost-hover: rgb(248 248 246 / 0.05);
+  --switch-off: #3d3d3a;                      /* surface-raised */
+  --switch-on: #f8f8f6;
+  --switch-thumb: #9c9a92;
+  --switch-thumb-on: #1f1e1d;
+  --radio-off: #7b7974;
+  --radio-on: #f8f8f6;
+  --scrollbar: rgb(248 248 246 / 0.1);
+  --mark-ring: 0 0 0 1px rgb(248 248 246 / 0.08);
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239c9a92' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  --search-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239c9a92' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='M16 16l4.5 4.5'/%3E%3C/svg%3E");
+  --menu-shadow: 0 0 0 1px rgb(0 0 0 / 0.2), 0 12px 32px rgb(0 0 0 / 0.45);
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html, body { margin: 0; padding: 0; background: var(--bg); }
+
+body {
+  width: 400px;
+  height: 520px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--size-ui);
+  line-height: var(--leading-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--selection); color: var(--text); }
+
+/* Opened as a standalone window instead of the toolbar popup */
+.standalone body { width: 100vw; height: 100vh; }
+
+#app, .view { height: 100%; }
+
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+  padding: var(--gutter);
+  min-height: 0;
+}
+
+/* ---------------------------------------------------------------- header */
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+  padding-left: 4px;
+  flex: none;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  margin: 0;
+  font-weight: 400;
+}
+
+.brand-mark { display: block; border-radius: 6px; box-shadow: var(--mark-ring); }
+
+.brand-name {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-heading-sm);
+  line-height: var(--leading-heading-sm);
+  font-weight: 400;
+  color: var(--text);
+}
+
+.plus { color: var(--brand-mark); }
+
+/* --------------------------------------------------------------- controls */
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-buttons);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+.icon-btn:hover { background: var(--hover); color: var(--text); }
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.icon-btn:disabled { cursor: default; }
+.icon-btn.busy svg { animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.icon-btn.small { width: 28px; height: 28px; }
+.icon-btn.small svg { width: 16px; height: 16px; }
+.result .icon-btn:hover { background: var(--hover-on-nested); }
+
+/* Keyboard focus on buttons and switches; fields show focus with their own border (below). */
+button:focus-visible,
+textarea:focus-visible,
+.switch:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ring);
+}
+
+.btn {
+  padding: 8px 20px;
+  border: 0;
+  border-radius: var(--radius-buttons);
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  font: inherit;
+  font-size: var(--text-body);
+  font-weight: var(--font-weight-w430);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.btn:hover { background: var(--btn-bg-hover); }
+
+.btn.ghost { background: transparent; color: var(--text-2); padding: 8px 12px; }
+.btn.ghost:hover { background: var(--btn-ghost-hover); color: var(--text); }
+
+.caption {
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+  color: var(--text-muted);
+}
+
+.badge {
+  display: inline-block;
+  max-width: 150px;
+  padding: 4px 8px;
+  border-radius: var(--radius-lg);
+  background: var(--nested);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.33;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.select,
+.input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-inputs);
+  background-color: var(--control-bg);
+  color: var(--text);
+  font: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.select:hover,
+.input:hover { border-color: var(--control-border-hover); }
+.select:focus,
+.input:focus {
+  outline: none;
+  border-color: var(--control-border-focus);
+  box-shadow: var(--control-focus-ring);
+}
+
+.select {
+  appearance: none;
+  padding-right: 32px;
+  cursor: pointer;
+  background-image: var(--chevron);
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+}
+
+/* ------------------------------------------------- dropdown (dropdown.js) */
+
+.dd {
+  display: flex;
+  align-items: center;
+  text-align: left;
+}
+.dd:disabled { cursor: default; opacity: 0.6; }
+.dd[aria-expanded="true"] {
+  border-color: var(--control-border-focus);
+  box-shadow: var(--control-focus-ring);
+}
+.dd-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The open list: a card of its own above the window. */
+.dd-menu {
+  position: fixed;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-inputs);
+  background: var(--card);
+  box-shadow: var(--menu-shadow);
+  overflow: hidden;
+  animation: dd-in 0.12s ease-out;
+}
+.dd-menu.is-above { animation-name: dd-in-above; }
+@keyframes dd-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@keyframes dd-in-above { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.dd-search {
+  flex: none;
+  height: 32px;
+  margin: 6px 6px 2px;
+  padding: 0 10px 0 32px;
+  border: 1px solid var(--control-border);
+  border-radius: calc(var(--radius-inputs) - 2px);
+  background: var(--control-bg) var(--search-icon) no-repeat 10px center / 14px;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  transition: border-color 0.2s ease;
+}
+.dd-search::placeholder { color: var(--text-faint); }
+.dd-search:hover { border-color: var(--control-border-hover); }
+.dd-search:focus { outline: none; border-color: var(--control-border-focus); }
+.dd-search::-webkit-search-cancel-button { display: none; }
+
+.dd-list {
+  position: relative;          /* the offsetParent the scrolling maths measures against */
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar) transparent;
+}
+.dd-list:focus { outline: none; }
+
+.dd-group {
+  position: sticky;
+  top: -4px;
+  z-index: 1;
+  margin: 0 -4px;
+  padding: 8px 12px 4px;
+  background: var(--card);
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-caption);
+  color: var(--text-muted);
+}
+.dd-group:not(:first-child) { margin-top: 4px; }
+
+.dd-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 6px 30px 6px 8px;
+  border-radius: calc(var(--radius-inputs) - 3px);
+  color: var(--text);
+  cursor: pointer;
+}
+.dd-option.is-active { background: var(--hover); }
+.dd-option[aria-selected="true"] .dd-label { font-weight: var(--font-weight-medium); }
+.dd-option[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+  background: var(--text);
+  -webkit-mask: var(--check) no-repeat center / contain;
+  mask: var(--check) no-repeat center / contain;
+}
+.dd-text { display: flex; flex-direction: column; min-width: 0; }
+.dd-label { overflow-wrap: anywhere; }
+.dd-detail { font-size: var(--text-caption); line-height: var(--leading-caption); color: var(--text-muted); }
+.dd-empty { padding: 12px 8px; color: var(--text-muted); text-align: center; }
+
+/* ------------------------------------------------------------ main screen */
+
+.langbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  flex: none;
+}
+.langbar .select { flex: 1; min-width: 0; }
+.arrow {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius-cards);
+  padding: var(--spacing-16);
+}
+
+/* The two text boxes. Typing in the input changes nothing about its frame. */
+.source,
+.result {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.source { flex: 4 1 0; min-height: 112px; }
+
+#source {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--size-input);
+  line-height: var(--leading-body);
+  resize: none;
+  scrollbar-width: none;
+}
+#source:focus-visible { box-shadow: none; }
+#source::placeholder { color: var(--text-faint); }
+
+.card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: none;
+  min-height: 28px;
+  margin: 4px -8px -8px 0;
+}
+
+.result {
+  position: relative;
+  flex: 5 1 0;
+  background: var(--nested);
+  border-color: transparent;
+}
+
+/* Opened with text selected on a page: only the translation is shown */
+.is-selection .source { display: none; }
+.is-selection .result { flex: 1 1 0; }
+
+.result .copy { position: absolute; top: 8px; right: 8px; }
+.result.has-copy .result-text { padding-right: 28px; }
+
+.result-text {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  font-size: var(--size-output);
+  line-height: var(--leading-body);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+  scrollbar-width: none;
+}
+/* Both text boxes still scroll by wheel, touchpad and keys; they just draw no bar.
+   scrollbar-width covers Chrome 121+, the pseudo-element the older versions down to 116. */
+#source::-webkit-scrollbar,
+.result-text::-webkit-scrollbar { display: none; }
+.result-text.is-empty { color: var(--text-faint); }
+.result-text.is-loading { color: var(--text-muted); animation: pulse 1.2s ease-in-out infinite; }
+.result-text.is-error { color: var(--text-2); }
+
+.result-actions { display: flex; gap: var(--spacing-8); flex: none; margin-top: 12px; }
+
+/* Site access switched off in Firefox's add-on permissions */
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+  padding: 12px 12px 12px 16px;
+}
+.notice-text {
+  flex: 1;
+  margin: 0;
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+  color: var(--text-2);
+}
+.notice .btn { flex: none; padding: 6px 14px; }
+
+#btn-copy .i-check { display: none; }
+#btn-copy.copied .i-copy { display: none; }
+#btn-copy.copied .i-check { display: block; }
+
+@keyframes pulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+
+/* -------------------------------------------------------- settings screen */
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 0 calc(var(--gutter) * -1);
+  padding: 0 var(--gutter) var(--gutter);
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar) transparent;
+}
+
+.section-title {
+  margin: var(--spacing-16) 0 var(--spacing-8);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.scroll > .section-title:first-child { margin-top: 0; }
+
+.list { padding: 0; overflow: hidden; }
+
+.prov-row,
+.toggle-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.prov-row {
+  padding: 12px var(--spacing-16);
+  transition: background-color 0.2s ease;
+}
+.prov + .prov { border-top: 1px solid var(--card-line); }
+.prov-row:hover { background: var(--row-hover); }
+
+/* The key and model box of an AI provider drops out of its own row and folds back up when another is chosen. */
+.prov-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  background: var(--nested);
+  transition: grid-template-rows 0.25s ease, visibility 0s linear 0.25s;
+}
+.prov.open .prov-panel {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition-delay: 0s;
+}
+.prov-panel-inner { min-height: 0; overflow: hidden; }
+
+.prov-row input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.row-text,
+.prov-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.prov-name,
+.row-title { font-weight: var(--font-weight-medium); color: var(--text); }
+.prov-note,
+.row-note { font-size: 12px; line-height: 1.5; color: var(--text-muted); }
+
+.radio-dot {
+  position: relative;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--radio-off);
+  border-radius: 50%;
+  background: var(--card);
+  transition: border-color 0.2s ease;
+}
+.radio-dot::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--radio-on);
+  transform: scale(0);
+  transition: transform 0.15s ease;
+}
+.prov-row input:checked ~ .radio-dot { border-color: var(--radio-on); }
+.prov-row input:checked ~ .radio-dot::after { transform: scale(1); }
+.prov-row input:focus-visible ~ .radio-dot {
+  box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ring);
+}
+
+.config {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: var(--spacing-16);
+}
+
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field > label,
+.field-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: var(--text-2);
+}
+.field-row { display: flex; align-items: center; gap: var(--spacing-8); }
+.field-row .select { flex: 1; min-width: 0; }
+.input-wrap { position: relative; }
+.input-wrap .input { padding-right: 40px; }
+.input-wrap .icon-btn { position: absolute; top: 2px; right: 2px; }
+
+.hint { font-size: var(--text-caption); line-height: var(--leading-caption); color: var(--text-muted); }
+.hint.status:empty { display: none; }
+
+.link {
+  color: var(--text-2);
+  font-weight: 400;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.2s ease;
+}
+.link:hover { color: var(--text); }
+
+.toggle-row { padding: 12px var(--spacing-16); }
+.toggle-row + .toggle-row { margin-top: var(--spacing-8); }
+.toggle-row.static { cursor: default; }
+
+/* Two-way choice (interface language): the picked half lifts out of a sunk track as a card. */
+.segmented {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-buttons);
+  background: var(--nested);
+}
+.segmented label { position: relative; cursor: pointer; }
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.segmented span {
+  display: block;
+  padding: 4px 10px;
+  border-radius: calc(var(--radius-buttons) - 2px);
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);   /* same weight in both states, so nothing shifts on a switch */
+  line-height: 1.54;
+  color: var(--text-muted);
+  transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.segmented label:hover span { color: var(--text); }
+.segmented input:checked + span {
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 0 0 1px var(--card-line);
+}
+.segmented input:focus-visible + span { box-shadow: 0 0 0 2px var(--ring); }
+
+.switch {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  margin: 0;
+  border-radius: 10px;
+  background: var(--switch-off);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--switch-thumb);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+.switch:checked { background: var(--switch-on); }
+.switch:checked::after { transform: translateX(16px); background: var(--switch-thumb-on); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

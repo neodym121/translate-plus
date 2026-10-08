@@ -49,10 +49,18 @@
       }),
     },
     tabs: { query: async () => [{ id: 1 }] },
+    // ?noaccess: site access switched off, as Firefox allows (gecko-extension shows a notice)
+    permissions: {
+      contains: async () => !params.has('noaccess'),
+      request: async () => true,
+      onAdded: { addListener: () => {} },
+      onRemoved: { addListener: () => {} },
+    },
     scripting: { executeScript: async () => [{ frameId: 0, result: params.get('selection') ?? '' }] },
     runtime: {
       id: 'translate-plus-stub',
       getURL: (p) => p,
+      getManifest: () => ({ host_permissions: [], content_scripts: [{ matches: ['<all_urls>'] }] }),
       sendMessage: async (message) => {
         window.__messages.push(message);
         if (message?.type !== 'translate-in-place') return undefined;
