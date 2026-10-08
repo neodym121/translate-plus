@@ -1,0 +1,78 @@
+<p align="center">
+  <img src="extension/icons/logo.svg" width="96" height="96" alt="Логотип Translate+" />
+</p>
+
+<h1 align="center">Translate+</h1>
+
+<p align="center">
+  <a href="README.md">English</a> · <b>Русский</b>
+</p>
+
+Translate+ — браузерное расширение-переводчик. Выдели текст на любой странице и сразу получи перевод от Google, Bing или ИИ-модели (Groq, Gemini, Polza). Работает в браузерах на Chromium: Chrome, Edge, Brave, Opera, Vivaldi и других.
+
+<p align="center">
+  <img src="assets/screenshot-ru.png" width="720" alt="Окно Translate+: перевод и настройки" />
+</p>
+
+## Возможности
+
+- **Перевод выделенного.** Выдели текст — у его конца появится маленький логотип. Клик по нему или по кнопке расширения на панели открывает окно, текст в нём уже переведён. Когда текст пришёл со страницы, окно показывает только перевод, без поля ввода.
+- **Обычный переводчик.** Введи или вставь текст в окно — перевод появится через долю секунды. Последний набранный текст хранится до закрытия браузера.
+- **Язык исходного текста определяется сам;** язык перевода выбирается на главном экране (по умолчанию английский).
+- **Пять провайдеров:** Google и Bing работают без ключа; Groq, Gemini и Polza — с твоим API-ключом, модель можно выбрать любую из тех, что принимают и выдают текст.
+- **Интерфейс на английском и русском,** переключается в Настройки → Язык.
+- **Светлая и тёмная тема** в стиле claude.ai.
+
+## Установка
+
+1. Скачай **`translate-plus-chromium.zip`** из [последнего релиза](https://github.com/neodym121/translate-plus/releases/latest) и распакуй. Папку `translate-plus-chromium` положи туда, где она останется: браузер загружает расширение прямо из неё.
+2. Открой страницу расширений: `chrome://extensions` в Chrome, `edge://extensions` в Edge, `brave://extensions` в Brave, `opera://extensions` в Opera, `vivaldi://extensions` в Vivaldi.
+3. Включи **«Режим разработчика»** (переключатель справа вверху; в Edge — на левой панели).
+4. Нажми **«Загрузить распакованное расширение»** и выбери папку `translate-plus-chromium` (ту, в которой лежит `manifest.json`).
+5. Закрепи Translate+ на панели через меню с пазлом и обнови вкладки, которые уже были открыты.
+
+**Обновление:** скачай новый релиз, замени содержимое папки и нажми кнопку обновления (↻) на карточке расширения.
+
+Значок у выделения не появляется там, куда браузер не пускает расширения (страницы `chrome://`, Chrome Web Store, встроенный просмотр PDF). Там открой окно кнопкой на панели и вставь текст.
+
+## Провайдеры перевода
+
+| Провайдер | Ключ | Заметки |
+|---|---|---|
+| Google | не нужен | публичный эндпоинт Google Translate |
+| Bing | не нужен | веб-переводчик Bing; длинный текст сам режется на части по 1000 символов |
+| Groq | [нужен](https://console.groq.com/keys) | быстрые открытые модели (Llama, gpt-oss, Qwen…), сгруппированы по разработчику |
+| Gemini | [нужен](https://aistudio.google.com/apikey) | Google AI Studio: модели Gemini и Gemma |
+| Polza | [нужен](https://polza.ai/dashboard/api-keys) | 400+ моделей; сначала выбирается разработчик (OpenAI, Anthropic, Google, DeepSeek…), потом его модель |
+
+У ИИ-провайдеров список моделей берётся из их API (при вводе ключа, по кнопке ↻ и сам раз в сутки). Модели, которые не умеют отвечать текстом — речь, картинки, эмбеддинги, модерация, — в список не попадают.
+
+**Приватность.** API-ключи хранятся только в `chrome.storage.local` этого браузера и уходят только выбранному провайдеру. Текст тоже уходит только выбранному провайдеру.
+
+## Разработка
+
+Расширение написано на чистом JavaScript без сборки: папка `extension/` — это и есть расширение.
+
+```bash
+node --test tests/lib.test.mjs          # разбивка текста и провайдеры на mock-сервере
+LIVE=1 node --test tests/lib.test.mjs   # плюс реальные запросы к Google и Bing
+node tests/dev-server.mjs               # окно в обычной вкладке: http://localhost:5173/popup/popup.html
+node tools/make-icons.mjs               # пересобрать extension/icons/icon*.png из геометрии логотипа
+```
+
+Релизы собирает GitHub Actions (`.github/workflows/release.yml`) при пуше тега `v*`. Тег должен совпадать с версией в `extension/manifest.json`, а сообщение тега становится описанием релиза:
+
+```bash
+git tag -a v1.0.1 --cleanup=verbatim -F notes.md
+git push origin v1.0.1
+```
+
+Шрифты: [Inter](https://rsms.me/inter/) и [Source Serif 4](https://github.com/adobe-fonts/source-serif), лицензия SIL Open Font License (`extension/popup/fonts/`).
+
+## Авторы
+
+Сделано [neodym121](https://github.com/neodym121) вместе с [Claude](https://claude.com/claude-code) (Anthropic).
+
+## Лицензия
+
+[MIT](LICENSE)

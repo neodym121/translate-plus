@@ -1,0 +1,47 @@
+# Push a v* tag to publish a release with translate-plus-chromium.zip (the unpacked extension, ready to load).
+# The tag's message is the release description: git tag -a v1.0.1 --cleanup=verbatim -F notes.md
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Tag matches the manifest version
+        run: |
+          version=$(jq -r .version extension/manifest.json)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::extension/manifest.json says $version, the tag is $GITHUB_REF_NAME"
+            exit 1
+          fi
+
+      - name: Test
+        run: node --test tests/lib.test.mjs
+
+      - name: Pack
+        run: |
+          cp -r extension translate-plus-chromium
+          zip -r -X translate-plus-chromium.zip translate-plus-chromium
+
+      - name: Release notes from the tag message
+        run: |
+          git fetch --force origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
+          git tag -l --format='%(contents:body)' "$GITHUB_REF_NAME" > notes.md
+          cat notes.md
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" translate-plus-chromium.zip --title "Translate+ $GITHUB_REF_NAME" --notes-file notes.md

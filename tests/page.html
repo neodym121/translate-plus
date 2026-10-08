@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Selection test page</title>
+  <style>
+    body { font: 16px/1.6 Georgia, serif; margin: 0; padding: 32px; max-width: 640px; color: #222; }
+    #box { height: 120px; overflow: auto; border: 1px solid #bbb; padding: 8px; margin: 24px 0; }
+    .tall { height: 700px; }
+    textarea { width: 100%; height: 70px; font: inherit; }
+    [dir=rtl] { margin: 16px 0; }
+    .dark { background: #111; color: #eee; padding: 12px; }
+  </style>
+  <!--STUB-->
+  <script>
+    // Test-only: expose the closed shadow root so scripts can find and click the icon.
+    const attach = Element.prototype.attachShadow;
+    Element.prototype.attachShadow = function (init) { return attach.call(this, { ...init, mode: 'open' }); };
+  </script>
+</head>
+<body>
+  <h1 id="title">Selection test page</h1>
+  <p id="p1">The quick brown fox jumps over the lazy dog. Translate+ should show its small logo right after the last selected word.</p>
+  <p id="p2">Second paragraph with <b id="bold">bold words</b> and more text that wraps onto another line so we can check the end of a multi-line selection.</p>
+  <p dir="rtl" id="rtl">مرحبا بالعالم، هذا اختبار للنص من اليمين إلى اليسار.</p>
+  <p class="dark" id="dark">Light text on a dark background, selected near the page edge.</p>
+  <textarea id="field">Text inside a textarea field.</textarea>
+  <div id="box"><div class="tall"><p id="inner">Text inside a scrolling container.</p></div></div>
+  <div class="tall"></div>
+  <p id="bottom">A line far below the fold.</p>
+  <script src="/content.js"></script>
+</body>
+</html>
