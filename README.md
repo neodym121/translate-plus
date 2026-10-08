@@ -40,10 +40,10 @@ Translate+ is a browser translator extension. Select text on any page and get th
 
 Version 140 or newer.
 
-1. Download **`translate-plus-firefox.xpi`** from the [latest release](https://github.com/neodym121/translate-plus/releases/latest). The file is signed by Mozilla.
-2. Open `about:addons`, click the gear ⚙ and choose **Install Add-on From File…**, then pick the file. Dragging the file onto the browser window works too.
-3. Confirm the install. Translate+ asks for access to all websites: the selection icon needs it on every page, and the translation services are reached through it.
-4. Pin Translate+ to the toolbar from the puzzle-piece menu, and reload the tabs that were already open.
+1. In Firefox, click **[translate-plus-firefox.xpi](https://github.com/neodym121/translate-plus/releases/latest/download/translate-plus-firefox.xpi)** (the file from the latest release, signed by Mozilla). The browser recognizes the add-on and offers to install it right away: allow github.com to install it (**Continue to Installation**), then click **Add**. Translate+ asks for access to all websites: the selection icon needs it on every page, and the translation services are reached through it.
+2. Pin Translate+ to the toolbar from the puzzle-piece menu, and reload the tabs that were already open.
+
+If the browser only saves the file instead, open `about:addons`, click the gear ⚙, choose **Install Add-on From File…** and pick the file.
 
 **Updating:** the browser installs new versions by itself. To check right away: `about:addons` → ⚙ → **Check for Updates**.
 
