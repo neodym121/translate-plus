@@ -51,8 +51,25 @@
     tabs: { query: async () => [{ id: 1 }] },
     scripting: { executeScript: async () => [{ frameId: 0, result: params.get('selection') ?? '' }] },
     runtime: {
+      id: 'translate-plus-stub',
       getURL: (p) => p,
-      sendMessage: async (message) => { window.__messages.push(message); },
+      sendMessage: async (message) => {
+        window.__messages.push(message);
+        if (message?.type !== 'translate-in-place') return undefined;
+        // What background.js does for an Alt+click, with the canned services below.
+        const [{ translateSegments }, { translate }, { loadSettings }] = await Promise.all([
+          import('/lib/inplace.js'), import('/lib/providers.js'), import('/lib/settings.js'),
+        ]);
+        const settings = await loadSettings();
+        try {
+          const texts = await translateSegments(message.texts, async (text) => (await translate({
+            provider: settings.provider, text, target: settings.targetLang, settings,
+          })).text);
+          return { texts };
+        } catch (e) {
+          return { error: `Could not translate (${e.code ?? e.message})` };
+        }
+      },
     },
     action: {},
     windows: {},
@@ -93,7 +110,8 @@
       const q = bodyOf(init).q;
       const demo = DEMO[q]?.[url.searchParams.get('tl')];
       if (demo) return json([[[demo, q, null, null, 10]], null, DEMO[q].from]);
-      return json([[[`[${url.searchParams.get('tl')}] ${q}`, q, null, null, 10]], null, /[а-яё]/i.test(q) ? 'ru' : 'en']);
+      const tagged = q.replace(/^(?=\S)/gm, `[${url.searchParams.get('tl')}] `); // every paragraph, like a real answer
+      return json([[[tagged, q, null, null, 10]], null, /[а-яё]/i.test(q) ? 'ru' : 'en']);
     }
     if (host === 'www.bing.com' && url.pathname === '/translator') {
       return new Response('IG:"ABCDEF0123456789" var params_AbusePreventionHelper = [1791403440713,"tok_demo",3600]; data-iid="translator.5023"');

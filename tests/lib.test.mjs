@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 
 import { splitIntoChunks, joinChunks, mapLimit } from '../extension/lib/chunk.js';
+import { batchSegments, translateSegments } from '../extension/lib/inplace.js';
 import { LANGUAGES, providerLangCode, normalizeLangCode, languageName } from '../extension/lib/languages.js';
 import { pickLocale, makeT } from '../extension/lib/i18n.js';
 import { loadSettings } from '../extension/lib/settings.js';
@@ -61,6 +62,37 @@ test('mapLimit keeps order and respects the limit', async () => {
   });
   assert.deepEqual(out, [2, 4, 6, 8, 10, 12]);
   assert.equal(peak, 2);
+});
+
+test('in place: neighbouring fragments share a request, long and preformatted ones go alone', () => {
+  assert.deepEqual(batchSegments(['a', 'b', 'c'], 100), [[0, 1, 2]]);
+  assert.deepEqual(batchSegments(['x'.repeat(60), 'y'.repeat(60), 'z'], 100), [[0], [1, 2]]);
+  assert.deepEqual(batchSegments(['a', 'code\n\nmore', 'b', 'c'], 100), [[0], [1], [2, 3]]);
+  assert.deepEqual(batchSegments([], 100), []);
+});
+
+test('in place: a batch is split back by blank lines', async () => {
+  const calls = [];
+  const out = await translateSegments(['One.', 'Two.', 'Three.'], async (text) => {
+    calls.push(text);
+    return text.toUpperCase().replace(/\n\n/g, '\n \n'); // services may put spaces into blank lines
+  });
+  assert.deepEqual(out, ['ONE.', 'TWO.', 'THREE.']);
+  assert.deepEqual(calls, ['One.\n\nTwo.\n\nThree.']);
+});
+
+test('in place: when paragraphs come back merged, each fragment is translated alone', async () => {
+  const calls = [];
+  const out = await translateSegments(['One.', 'Two.'], async (text) => {
+    calls.push(text);
+    return text.includes('\n') ? 'ONE. TWO.' : `[${text}]`;
+  });
+  assert.deepEqual(out, ['[One.]', '[Two.]']);
+  assert.equal(calls.length, 3);
+});
+
+test('in place: errors reach the caller', async () => {
+  await assert.rejects(translateSegments(['a'], async () => { throw new TranslateError('rate'); }), { code: 'rate' });
 });
 
 test('language helpers', () => {

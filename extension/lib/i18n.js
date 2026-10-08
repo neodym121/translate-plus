@@ -18,9 +18,8 @@ const STRINGS = {
 
     providerSection: 'Провайдер перевода',
     providerFree: 'Бесплатно, без ключа',
-    providerGroq: 'Нужен API-ключ · быстрые LLM',
-    providerPolza: 'Нужен API-ключ · 400+ моделей',
-    providerGemini: 'Нужен API-ключ · Google AI',
+    providerNeedsKey: 'Нужен API-ключ',
+    providerKeySet: 'API-ключ сконфигурирован',
     apiKey: 'API-ключ',
     getKey: 'Получить ключ',
     showKey: 'Показать ключ',
@@ -41,7 +40,7 @@ const STRINGS = {
     darkThemeNote: 'Тёмное оформление окна',
     pageSection: 'На странице',
     showIcon: 'Значок при выделении текста',
-    showIconNote: 'Маленький логотип рядом с выделенным текстом',
+    showIconNote: 'Маленький логотип рядом с выделенным текстом. Shift+клик по нему — перевод прямо на странице',
 
     errNoKey: 'Для {name} нужен API-ключ. Добавьте его в настройках.',
     errAuth: '{name} не принял ключ. Проверьте API-ключ в настройках.',
@@ -72,9 +71,8 @@ const STRINGS = {
 
     providerSection: 'Translation provider',
     providerFree: 'Free, no key needed',
-    providerGroq: 'API key required · fast LLMs',
-    providerPolza: 'API key required · 400+ models',
-    providerGemini: 'API key required · Google AI',
+    providerNeedsKey: 'API key required',
+    providerKeySet: 'API key configured',
     apiKey: 'API key',
     getKey: 'Get a key',
     showKey: 'Show key',
@@ -95,7 +93,7 @@ const STRINGS = {
     darkThemeNote: 'A dark look for the window',
     pageSection: 'On pages',
     showIcon: 'Icon on text selection',
-    showIconNote: 'A small logo next to the selected text',
+    showIconNote: 'A small logo next to the selected text. Shift+click it to translate right on the page',
 
     errNoKey: '{name} needs an API key. Add it in the settings.',
     errAuth: '{name} rejected the key. Check the API key in the settings.',

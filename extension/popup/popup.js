@@ -45,7 +45,7 @@ const el = {
 const state = {
   settings: null,
   selectionMode: false, // opened with text selected on a page: only the translation is shown
-  panels: {},         // provider id -> { item, inner, built }: the key/model box under each AI provider's row
+  panels: {},         // provider id -> { item, inner, note, built }: the key/model box under each AI provider's row
   cache: {},          // model lists: { groq|gemini: {models: [{id, group}], at}, polzaVendors: {list, at}, polza: {vendor: {models, at}} }
   abort: null,
   requestId: 0,
@@ -370,27 +370,35 @@ function closeSettings() {
   if (state.dirty && cleanText(el.source.value)) translateNow();
 }
 
-const PROVIDER_NOTES = {
-  google: 'providerFree', bing: 'providerFree', groq: 'providerGroq', polza: 'providerPolza', gemini: 'providerGemini',
-};
+/** Under each provider's name: free, or whether its API key is already filled in. */
+function providerNote(id) {
+  if (!PROVIDERS[id].needsKey) return t('providerFree');
+  return t(state.settings[id]?.apiKey ? 'providerKeySet' : 'providerNeedsKey');
+}
+
+function updateProviderNote(id) {
+  const note = state.panels[id]?.note;
+  if (note) note.textContent = providerNote(id);
+}
 
 function renderProviderList() {
   state.panels = {};
   el.providerList.replaceChildren(...Object.entries(PROVIDERS).map(([id, info]) => {
     const input = h('input', { type: 'radio', name: 'provider', value: id, checked: id === state.settings.provider });
     input.addEventListener('change', () => chooseProvider(id));
+    const note = h('span', { class: 'prov-note' }, providerNote(id));
     const item = h('div', { class: 'prov' },
       h('label', { class: 'prov-row' },
         input,
         h('span', { class: 'prov-text' },
           h('span', { class: 'prov-name' }, info.name),
-          h('span', { class: 'prov-note' }, t(PROVIDER_NOTES[id]))),
+          note),
         h('span', { class: 'radio-dot' })));
     if (info.needsKey) {
       // The key and model box lives inside the provider's own item, below its row.
       const inner = h('div', { class: 'prov-panel-inner' });
       item.append(h('div', { class: 'prov-panel' }, inner));
-      state.panels[id] = { item, inner, built: false };
+      state.panels[id] = { item, inner, note, built: false };
     }
     return item;
   }));
@@ -470,6 +478,7 @@ function keyField(provider) {
     cfg.apiKey = input.value.trim();
     state.dirty = true;
     persist();
+    updateProviderNote(provider);
   });
   return {
     input,

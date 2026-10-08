@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Translate+",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Select text on any page and get an instant translation. Google, Bing, Groq, Polza or Gemini.",
   "minimum_chrome_version": "116",
   "icons": {
@@ -21,7 +21,8 @@
     }
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
