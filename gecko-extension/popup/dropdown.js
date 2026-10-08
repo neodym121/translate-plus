@@ -210,7 +210,14 @@ export function createDropdown({ button, id, texts, onChange }) {
   const onOutsideScroll = (e) => {
     if (!menu.root.contains(e.target)) close(false);
   };
-  const onWindowChange = () => close(false);
+  // Firefox fits its toolbar popup to the page after layout changes and sends
+  // resize events even when the size stays the same; only a real change closes the list.
+  let openSize = '';
+  const windowSize = () => `${window.innerWidth}x${window.innerHeight}`;
+  const onWindowChange = (e) => {
+    if (e.type === 'resize' && windowSize() === openSize) return;
+    close(false);
+  };
 
   function open() {
     if (menu || trigger.disabled) return;
@@ -264,6 +271,7 @@ export function createDropdown({ button, id, texts, onChange }) {
     highlightSelected();
     (search ?? list).focus({ preventScroll: true });
 
+    openSize = windowSize();
     document.addEventListener('pointerdown', onOutsidePointer, true);
     document.addEventListener('scroll', onOutsideScroll, true);
     window.addEventListener('resize', onWindowChange);

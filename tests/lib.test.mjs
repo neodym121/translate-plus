@@ -389,7 +389,18 @@ const ROOT = new URL('../', import.meta.url);
 const readJson = async (path) => JSON.parse(await readFile(new URL(path, ROOT), 'utf8'));
 
 // The files of gecko-extension/ that are meant to differ from extension/; the rest are plain copies.
-const GECKO_OWN = new Set(['manifest.json', 'background.js', 'lib/i18n.js', 'popup/popup.html', 'popup/popup.css', 'popup/popup.js']);
+const GECKO_OWN = new Set([
+  'manifest.json', 'background.js', 'lib/i18n.js', 'popup/popup.html', 'popup/popup.css', 'popup/popup.js', 'popup/dropdown.js',
+]);
+
+/** -1, 0 or 1 for dotted version numbers such as 1.2.10 and 1.2.9. */
+const compareVersions = (a, b) => {
+  const [x, y] = [a, b].map((v) => v.split('.').map(Number));
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) < (y[i] ?? 0) ? -1 : 1;
+  }
+  return 0;
+};
 
 async function listFiles(dir) {
   const base = fileURLToPath(new URL(dir, ROOT));
@@ -409,14 +420,20 @@ test('gecko build: Firefox manifest, in step with the Chromium one and with upda
   assert.deepEqual(data.required, ['websiteContent']);
   assert.equal(updateUrl, 'https://raw.githubusercontent.com/neodym121/translate-plus/main/updates.json');
 
-  // Apart from the browser-specific keys, both builds declare the same: version, permissions, content script.
-  const common = ({ background, minimum_chrome_version, browser_specific_settings, ...rest }) => rest;
+  // Apart from the browser-specific keys, both builds declare the same permissions and content script.
+  // The versions may differ: a fix for one browser only ships in that build.
+  const common = ({ version, background, minimum_chrome_version, browser_specific_settings, ...rest }) => rest;
   assert.deepEqual(common(gecko), common(chromium));
 
-  // Firefox finds the current version in updates.json, pointing at its release asset.
-  const entry = updates.addons[id]?.updates.find((u) => u.version === gecko.version);
-  assert.ok(entry, `updates.json has no entry for ${gecko.version}`);
-  assert.match(entry.update_link, new RegExp(`/releases/download/[\\w-]*v${gecko.version.replaceAll('.', '\\.')}/translate-plus-firefox\\.xpi$`));
+  // Every released Firefox version is listed with its own release asset, oldest first. The manifest
+  // carries the newest one, or the next one while it waits to be signed and released.
+  const list = updates.addons[id]?.updates ?? [];
+  assert.ok(list.length, 'updates.json lists no version');
+  for (const [i, u] of list.entries()) {
+    assert.match(u.update_link, new RegExp(`/releases/download/[\\w-]*v${u.version.replaceAll('.', '\\.')}/translate-plus-firefox\\.xpi$`));
+    if (i) assert.equal(compareVersions(list[i - 1].version, u.version), -1, 'updates.json is not in version order');
+  }
+  assert.ok(compareVersions(gecko.version, list.at(-1).version) >= 0, 'the manifest is older than the last released version');
 });
 
 test('gecko build: shared files are plain copies of extension/', async () => {

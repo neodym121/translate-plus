@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Translate+",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Select text on any page and get an instant translation. Google, Bing, Groq, Polza or Gemini.",
   "icons": {
     "16": "icons/icon16.png",
